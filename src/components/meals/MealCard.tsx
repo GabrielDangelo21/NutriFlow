@@ -106,14 +106,13 @@ export const MealCard = memo(function MealCard({ meal, onRemove, onChangeCategor
             </div>
 
             {/* Action Buttons (visible on hover) */}
-            <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            <div className="absolute -top-2 -right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
                 <button
                     onClick={handleToggleFavorite}
-                    className={`bg-white dark:bg-zinc-800 p-2 rounded-full shadow-md outline-none transition-colors ${
-                        favorited
+                    className={`bg-white dark:bg-zinc-800 p-2 rounded-full shadow-md outline-none transition-colors ${favorited
                             ? 'text-amber-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
                             : 'text-zinc-400 hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
-                    }`}
+                        }`}
                     aria-label={favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                     title={favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                 >

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Plus } from 'lucide-react';
 import type { Meal, MealCategory } from '../../types';
 import { MealCard } from './MealCard';
@@ -11,7 +12,7 @@ interface MealCategorySectionProps {
     onAddClick: () => void;
 }
 
-export function MealCategorySection({ title, meals, onRemove, onChangeCategory, onEdit, onAddClick }: MealCategorySectionProps) {
+export const MealCategorySection = memo(function MealCategorySection({ title, meals, onRemove, onChangeCategory, onEdit, onAddClick }: MealCategorySectionProps) {
     const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
 
     return (
@@ -48,4 +49,4 @@ export function MealCategorySection({ title, meals, onRemove, onChangeCategory, 
             )}
         </div>
     );
-}
+});

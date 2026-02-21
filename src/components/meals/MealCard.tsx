@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { memo, useState, useRef, useEffect } from 'react';
 import type { Meal, MealCategory } from '../../types';
-import { Trash2, ArrowRightLeft, Pencil } from 'lucide-react';
+import { Trash2, ArrowRightLeft, Pencil, Star } from 'lucide-react';
+import { useFavoritesStore } from '../../store/useFavoritesStore';
+import { useToastStore } from '../../store/useToastStore';
 
 const CATEGORY_LABELS: Record<MealCategory, string> = {
     breakfast: 'Café da Manhã',
@@ -16,11 +18,15 @@ interface MealCardProps {
     onEdit: (meal: Meal) => void;
 }
 
-export function MealCard({ meal, onRemove, onChangeCategory, onEdit }: MealCardProps) {
+export const MealCard = memo(function MealCard({ meal, onRemove, onChangeCategory, onEdit }: MealCardProps) {
     const [showCategoryPicker, setShowCategoryPicker] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const otherCategories = (Object.keys(CATEGORY_LABELS) as MealCategory[]).filter(c => c !== meal.category);
+
+    const { addFavorite, removeFavorite, isFavorite, favorites } = useFavoritesStore();
+    const { addToast } = useToastStore();
+    const favorited = isFavorite(meal.name);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -40,6 +46,23 @@ export function MealCard({ meal, onRemove, onChangeCategory, onEdit }: MealCardP
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showCategoryPicker]);
+
+    const handleToggleFavorite = () => {
+        if (favorited) {
+            const fav = favorites.find((f) => f.name === meal.name);
+            if (fav) removeFavorite(fav.id);
+            addToast('info', `"${meal.name}" removido dos favoritos.`);
+        } else {
+            addFavorite({
+                name: meal.name,
+                calories: meal.calories,
+                protein: meal.protein,
+                carbs: meal.carbs,
+                fat: meal.fat,
+            });
+            addToast('success', `"${meal.name}" adicionado aos favoritos!`);
+        }
+    };
 
     return (
         <div className="group relative flex items-center gap-4 p-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 hover:shadow-md hover:border-zinc-200 dark:hover:border-zinc-700 transition-all">
@@ -84,6 +107,18 @@ export function MealCard({ meal, onRemove, onChangeCategory, onEdit }: MealCardP
 
             {/* Action Buttons (visible on hover) */}
             <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <button
+                    onClick={handleToggleFavorite}
+                    className={`bg-white dark:bg-zinc-800 p-2 rounded-full shadow-md outline-none transition-colors ${
+                        favorited
+                            ? 'text-amber-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                            : 'text-zinc-400 hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                    }`}
+                    aria-label={favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                    title={favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                >
+                    <Star size={14} fill={favorited ? 'currentColor' : 'none'} />
+                </button>
                 <button
                     ref={buttonRef}
                     onClick={() => setShowCategoryPicker(!showCategoryPicker)}
@@ -134,4 +169,4 @@ export function MealCard({ meal, onRemove, onChangeCategory, onEdit }: MealCardP
 
         </div>
     );
-}
+});

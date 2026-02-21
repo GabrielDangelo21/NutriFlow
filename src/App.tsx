@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useMealStore } from './store/useMealStore';
 import { ProfileEditor } from './components/profile/ProfileEditor';
 import { ToastContainer } from './components/ui/Toast';
+import { WeeklySummary } from './components/dashboard/WeeklySummary';
 import type { MealCategory } from './types';
 
 export type AppView = 'dashboard' | 'profile';
@@ -122,6 +123,8 @@ function Dashboard() {
         <MealsList onAddMeal={handleOpenManual} onEditMeal={handleEditMeal} />
 
         <HistoryChart />
+
+        <WeeklySummary />
       </div>
 
       {/* Speed Dial FAB */}

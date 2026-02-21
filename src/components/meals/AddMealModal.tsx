@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Star, BookOpen, Zap } from 'lucide-react';
 import { useMealStore } from '../../store/useMealStore';
+import { useFavoritesStore } from '../../store/useFavoritesStore';
+import { FOOD_LIBRARY } from '../../data/foodLibrary';
 import type { MealCategory, Meal } from '../../types';
+import type { FoodItem } from '../../data/foodLibrary';
 
 interface AddMealModalProps {
     isOpen: boolean;
@@ -23,6 +26,18 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
     const [category, setCategory] = useState<MealCategory>(defaultCategory);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState('');
+    const [quickTab, setQuickTab] = useState<'favorites' | 'library'>('favorites');
+
+    const { favorites } = useFavoritesStore();
+
+    const fillFromQuick = (item: FoodItem | { name: string; calories: number; protein: number; carbs: number; fat: number }) => {
+        setName(item.name);
+        setCalories(String(item.calories));
+        setProtein(String(item.protein));
+        setCarbs(String(item.carbs));
+        setFat(String(item.fat));
+        setFormError('');
+    };
 
     // Set state when modal opens or mealToEdit changes
     useEffect(() => {
@@ -127,6 +142,55 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
                         {/* Form */}
                         <div className="overflow-y-auto p-6 pt-4">
                             <form id="add-meal-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+
+                                {/* Quick Start Section */}
+                                {!mealToEdit && (
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <Zap size={14} className="text-amber-500" />
+                                            <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Início Rápido</span>
+                                        </div>
+                                        {/* Tabs */}
+                                        <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setQuickTab('favorites')}
+                                                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${quickTab === 'favorites' ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
+                                            >
+                                                <Star size={12} fill={quickTab === 'favorites' ? 'currentColor' : 'none'} />
+                                                Favoritos
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setQuickTab('library')}
+                                                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${quickTab === 'library' ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
+                                            >
+                                                <BookOpen size={12} />
+                                                Biblioteca
+                                            </button>
+                                        </div>
+                                        {/* Items scroll */}
+                                        {quickTab === 'favorites' && favorites.length === 0 ? (
+                                            <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center py-3 italic">
+                                                Toque em ★ em qualquer refeição para salvar aqui.
+                                            </p>
+                                        ) : (
+                                            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+                                                {(quickTab === 'favorites' ? favorites : FOOD_LIBRARY).map((item) => (
+                                                    <button
+                                                        key={item.name}
+                                                        type="button"
+                                                        onClick={() => fillFromQuick(item)}
+                                                        className="flex-shrink-0 flex flex-col items-start gap-0.5 px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all text-left"
+                                                    >
+                                                        <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 line-clamp-1 max-w-[120px]">{item.name}</span>
+                                                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400">{item.calories} kcal</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Name */}
                                 <div className="flex flex-col gap-1.5">

@@ -80,6 +80,19 @@ export function CalorieRing({ consumed, goal }: CalorieRingProps) {
                     <span className="font-bold text-zinc-900 dark:text-zinc-50">{goal}</span>
                 </div>
             </div>
+
+            {/* Goal percentage */}
+            {consumed > 0 && (
+                <span className={`text-xs font-semibold mt-2 ${
+                    isOver
+                        ? 'text-red-500 dark:text-red-400'
+                        : percentage > 85
+                        ? 'text-amber-500 dark:text-amber-400'
+                        : 'text-emerald-500 dark:text-emerald-400'
+                }`}>
+                    {Math.round((consumed / goal) * 100)}% da meta
+                </span>
+            )}
         </div>
     );
 }

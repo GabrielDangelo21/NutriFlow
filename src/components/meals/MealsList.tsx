@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useMealStore } from '../../store/useMealStore';
 import { MealCategorySection } from './MealCategorySection';
 import type { MealCategory } from '../../types';
@@ -20,7 +21,10 @@ interface MealsListProps {
 export function MealsList({ onAddMeal, onEditMeal }: MealsListProps) {
     const { meals, selectedDateStr, removeMeal, updateMealCategory } = useMealStore();
 
-    const todaysMeals = meals.filter((meal) => meal.dateStr === selectedDateStr);
+    const todaysMeals = useMemo(
+        () => meals.filter((meal) => meal.dateStr === selectedDateStr),
+        [meals, selectedDateStr]
+    );
 
     const handleAddClick = (category: MealCategory) => {
         if (onAddMeal) {

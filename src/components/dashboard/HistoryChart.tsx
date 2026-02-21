@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useMealStore } from '../../store/useMealStore';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from '../../hooks/useTheme';
@@ -39,17 +40,15 @@ export function HistoryChart() {
 
     const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-    const data = Array.from({ length: 7 }).map((_, i) => {
+    const data = useMemo(() => Array.from({ length: 7 }).map((_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
 
-        // Format date string to match store format (YYYY-MM-DD)
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
 
-        // Aggregate calories for this specific date
         const dailyCalories = meals
             .filter(meal => meal.dateStr === dateStr)
             .reduce((sum, meal) => sum + meal.calories, 0);
@@ -62,7 +61,7 @@ export function HistoryChart() {
             isOver: dailyCalories > goals.calories,
             isToday
         };
-    });
+    }), [meals, goals.calories]);
 
     return (
         <div className="flex flex-col w-full mb-8">

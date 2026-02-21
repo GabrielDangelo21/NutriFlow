@@ -6,6 +6,7 @@ import { analyzeMealImage, analyzeMealText } from '../../services/geminiService'
 import type { AIAnalysisResult } from '../../services/geminiService';
 import imageCompression from 'browser-image-compression';
 import type { MealCategory } from '../../types';
+import { useToastStore } from '../../store/useToastStore';
 
 interface AiAnalyzerModalProps {
     isOpen: boolean;
@@ -24,6 +25,7 @@ const QUICK_SUGGESTIONS = [
 
 export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: AiAnalyzerModalProps) {
     const { addMeal, selectedDateStr } = useMealStore();
+    const { addToast } = useToastStore();
 
     // UI State
     const [step, setStep] = useState<Step>('input');
@@ -38,6 +40,7 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
     // Analysis Result State
     const [editedResult, setEditedResult] = useState<AIAnalysisResult | null>(null);
     const [isRecalculating, setIsRecalculating] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<MealCategory>(defaultCategory);
 
     const resetModal = () => {
@@ -47,6 +50,7 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
         setImagePreview(null);
         setEditedResult(null);
         setIsRecalculating(false);
+        setIsSaving(false);
         setSelectedCategory(defaultCategory);
     };
 
@@ -74,6 +78,7 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
             });
         } catch (err) {
             console.error('Recalculate error:', err);
+            addToast('error', 'Erro ao recalcular. Tente novamente.');
         }
         setIsRecalculating(false);
     };
@@ -109,13 +114,17 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
                     setEditedResult(analysis);
                     setStep('review');
                 } catch (error) {
-                    setError(error instanceof Error ? error.message : 'Erro ao analisar imagem.');
+                    const msg = error instanceof Error ? error.message : 'Erro ao analisar imagem.';
+                    setError(msg);
+                    addToast('error', msg);
                     setStep('input');
                 }
             };
         } catch (error) {
             console.error("Compression error", error);
-            setError('Erro ao processar imagem.');
+            const msg = 'Erro ao processar imagem.';
+            setError(msg);
+            addToast('error', msg);
             setStep('input');
         }
     };
@@ -126,13 +135,15 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
         try {
             setStep('processing');
             setError(null);
-            setImagePreview(null); // No image for text analysis
+            setImagePreview(null);
 
             const analysis = await analyzeMealText(text);
             setEditedResult(analysis);
             setStep('review');
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Erro ao analisar texto.');
+            const msg = error instanceof Error ? error.message : 'Erro ao analisar texto.';
+            setError(msg);
+            addToast('error', msg);
             setStep('input');
         }
     };
@@ -140,23 +151,29 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
     const handleSave = async () => {
         if (!editedResult) return;
 
-        // Build the time string
         const now = new Date();
         const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        await addMeal({
-            name: editedResult.name,
-            calories: editedResult.calories,
-            protein: editedResult.protein,
-            carbs: editedResult.carbs,
-            fat: editedResult.fat,
-            category: selectedCategory,
-            time,
-            dateStr: selectedDateStr,
-            imageUrl: imagePreview || undefined, // Only save if we have one
-        });
-
-        handleClose();
+        setIsSaving(true);
+        try {
+            await addMeal({
+                name: editedResult.name,
+                calories: editedResult.calories,
+                protein: editedResult.protein,
+                carbs: editedResult.carbs,
+                fat: editedResult.fat,
+                category: selectedCategory,
+                time,
+                dateStr: selectedDateStr,
+                imageUrl: imagePreview || undefined,
+            });
+            handleClose();
+        } catch (err) {
+            console.error('Save error:', err);
+            addToast('error', 'Erro ao salvar refeição.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -217,7 +234,6 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        {/* Fake visible button that triggers invisible input */}
                                         <button
                                             onClick={() => cameraInputRef.current?.click()}
                                             className="flex flex-col items-center justify-center p-6 gap-3 bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/5 transition-all outline-none"
@@ -297,7 +313,7 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="flex flex-col items-center justify-center p-12 h-full gap-6 text-center"
                                 >
-                                    <div className="relative relative w-24 h-24 flex items-center justify-center">
+                                    <div className="relative w-24 h-24 flex items-center justify-center">
                                         <motion.div
                                             animate={{ rotate: 360 }}
                                             transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
@@ -403,6 +419,8 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
                                                 <div className="flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500">
                                                     <input
                                                         type="number"
+                                                        min="0"
+                                                        max="9999"
                                                         className="w-full p-3 bg-transparent outline-none dark:text-white font-bold"
                                                         value={editedResult.calories}
                                                         onChange={(e) => setEditedResult({ ...editedResult, calories: Number(e.target.value) })}
@@ -425,6 +443,8 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
                                                 <div className="flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
                                                     <input
                                                         type="number"
+                                                        min="0"
+                                                        max="999"
                                                         className="w-full p-2 text-center bg-transparent outline-none dark:text-white font-semibold"
                                                         value={editedResult.protein}
                                                         onChange={(e) => setEditedResult({ ...editedResult, protein: Number(e.target.value) })}
@@ -436,6 +456,8 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
                                                 <div className="flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
                                                     <input
                                                         type="number"
+                                                        min="0"
+                                                        max="999"
                                                         className="w-full p-2 text-center bg-transparent outline-none dark:text-white font-semibold"
                                                         value={editedResult.carbs}
                                                         onChange={(e) => setEditedResult({ ...editedResult, carbs: Number(e.target.value) })}
@@ -447,6 +469,8 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
                                                 <div className="flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
                                                     <input
                                                         type="number"
+                                                        min="0"
+                                                        max="999"
                                                         className="w-full p-2 text-center bg-transparent outline-none dark:text-white font-semibold"
                                                         value={editedResult.fat}
                                                         onChange={(e) => setEditedResult({ ...editedResult, fat: Number(e.target.value) })}
@@ -490,10 +514,20 @@ export function AiAnalyzerModal({ isOpen, onClose, defaultCategory = 'lunch' }: 
                                 </div>
                                 <button
                                     onClick={handleSave}
-                                    className="w-full py-3.5 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold transition-all focus-visible:ring-4 focus-visible:ring-indigo-500/30 outline-none"
+                                    disabled={isSaving}
+                                    className="w-full py-3.5 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold transition-all focus-visible:ring-4 focus-visible:ring-indigo-500/30 outline-none disabled:opacity-60"
                                 >
-                                    <Check size={20} />
-                                    <span>Confirmar Diário</span>
+                                    {isSaving ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                            <span>Salvando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check size={20} />
+                                            <span>Confirmar Diário</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         )}

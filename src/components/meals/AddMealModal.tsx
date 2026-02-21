@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useMealStore } from '../../store/useMealStore';
-import type { MealCategory } from '../../types';
+import type { MealCategory, Meal } from '../../types';
 
 interface AddMealModalProps {
     isOpen: boolean;
     onClose: () => void;
     defaultCategory?: MealCategory;
-    mealToEdit?: any;
+    mealToEdit?: Meal | null;
 }
 
 export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', mealToEdit }: AddMealModalProps) {
@@ -21,10 +21,13 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
     const [fat, setFat] = useState('');
     const [time, setTime] = useState('');
     const [category, setCategory] = useState<MealCategory>(defaultCategory);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formError, setFormError] = useState('');
 
     // Set state when modal opens or mealToEdit changes
     useEffect(() => {
         if (isOpen) {
+            setFormError('');
             if (mealToEdit) {
                 setName(mealToEdit.name);
                 setCalories(String(mealToEdit.calories));
@@ -51,30 +54,42 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
         e.preventDefault();
         if (!name || !calories) return;
 
-        if (mealToEdit) {
-            await updateMeal(mealToEdit.id, {
-                name,
-                calories: Number(calories),
-                protein: Number(protein) || 0,
-                carbs: Number(carbs) || 0,
-                fat: Number(fat) || 0,
-                time,
-                category,
-            });
-        } else {
-            await addMeal({
-                name,
-                calories: Number(calories),
-                protein: Number(protein) || 0,
-                carbs: Number(carbs) || 0,
-                fat: Number(fat) || 0,
-                time,
-                category,
-                dateStr: selectedDateStr,
-            });
+        const caloriesNum = Number(calories);
+        if (caloriesNum > 9999) {
+            setFormError('O valor máximo de calorias por refeição é 9999 kcal.');
+            return;
         }
 
-        onClose();
+        setFormError('');
+        setIsSubmitting(true);
+
+        try {
+            if (mealToEdit) {
+                await updateMeal(mealToEdit.id, {
+                    name,
+                    calories: caloriesNum,
+                    protein: Number(protein) || 0,
+                    carbs: Number(carbs) || 0,
+                    fat: Number(fat) || 0,
+                    time,
+                    category,
+                });
+            } else {
+                await addMeal({
+                    name,
+                    calories: caloriesNum,
+                    protein: Number(protein) || 0,
+                    carbs: Number(carbs) || 0,
+                    fat: Number(fat) || 0,
+                    time,
+                    category,
+                    dateStr: selectedDateStr,
+                });
+            }
+            onClose();
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -171,13 +186,17 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
                                         id="calories"
                                         type="number"
                                         min="0"
+                                        max="9999"
                                         step="1"
                                         required
                                         value={calories}
-                                        onChange={(e) => setCalories(e.target.value)}
+                                        onChange={(e) => { setCalories(e.target.value); setFormError(''); }}
                                         placeholder="Ex: 350"
                                         className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all dark:text-zinc-100 font-bold text-lg"
                                     />
+                                    {formError && (
+                                        <p className="text-xs text-red-500 mt-0.5">{formError}</p>
+                                    )}
                                 </div>
 
                                 {/* Macros */}
@@ -188,6 +207,7 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
                                             id="protein"
                                             type="number"
                                             min="0"
+                                            max="999"
                                             value={protein}
                                             onChange={(e) => setProtein(e.target.value)}
                                             placeholder="0"
@@ -200,6 +220,7 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
                                             id="carbs"
                                             type="number"
                                             min="0"
+                                            max="999"
                                             value={carbs}
                                             onChange={(e) => setCarbs(e.target.value)}
                                             placeholder="0"
@@ -212,6 +233,7 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
                                             id="fat"
                                             type="number"
                                             min="0"
+                                            max="999"
                                             value={fat}
                                             onChange={(e) => setFat(e.target.value)}
                                             placeholder="0"
@@ -228,9 +250,17 @@ export function AddMealModal({ isOpen, onClose, defaultCategory = 'breakfast', m
                             <button
                                 type="submit"
                                 form="add-meal-form"
-                                className="w-full py-4 px-6 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl font-bold transition-all focus-visible:ring-4 focus-visible:ring-emerald-500/30 outline-none shadow-lg shadow-emerald-500/20"
+                                disabled={isSubmitting}
+                                className="w-full py-4 px-6 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl font-bold transition-all focus-visible:ring-4 focus-visible:ring-emerald-500/30 outline-none shadow-lg shadow-emerald-500/20 disabled:opacity-60 flex items-center justify-center gap-2"
                             >
-                                Salvar Refeição
+                                {isSubmitting ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                        <span>Salvando...</span>
+                                    </>
+                                ) : (
+                                    'Salvar Refeição'
+                                )}
                             </button>
                         </div>
 

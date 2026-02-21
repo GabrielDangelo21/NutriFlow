@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
     User,
@@ -9,9 +9,11 @@ import {
     Target,
     Save,
     CheckCircle2,
-    UserCircle2
+    Camera
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToastStore } from '../../store/useToastStore';
+import imageCompression from 'browser-image-compression';
 import type { ActivityLevel, GoalType, Gender } from '../../types';
 
 interface ProfileEditorProps {
@@ -40,6 +42,8 @@ const genders: { value: Gender; label: string }[] = [
 
 export function ProfileEditor({ onBack }: ProfileEditorProps) {
     const { profile, updateProfile } = useAuth();
+    const { addToast } = useToastStore();
+    const avatarInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
         name: profile?.name || '',
@@ -50,10 +54,38 @@ export function ProfileEditor({ onBack }: ProfileEditorProps) {
         activityLevel: profile?.activityLevel || 'moderate' as ActivityLevel,
         goalType: profile?.goalType || 'maintain' as GoalType,
         targetWeight: profile?.targetWeight || 0,
+        avatarUrl: profile?.avatarUrl || '',
     });
 
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingAvatar(true);
+        try {
+            const compressed = await imageCompression(file, {
+                maxSizeMB: 0.3,
+                maxWidthOrHeight: 300,
+                useWebWorker: true,
+            });
+
+            const reader = new FileReader();
+            reader.readAsDataURL(compressed);
+            reader.onloadend = () => {
+                const base64 = reader.result as string;
+                setFormData((prev) => ({ ...prev, avatarUrl: base64 }));
+                setIsUploadingAvatar(false);
+            };
+        } catch (err) {
+            console.error('Avatar compression error:', err);
+            addToast('error', 'Erro ao processar imagem. Tente outro arquivo.');
+            setIsUploadingAvatar(false);
+        }
+    };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,11 +96,13 @@ export function ProfileEditor({ onBack }: ProfileEditorProps) {
                 weight: Number(formData.weight),
                 height: Number(formData.height),
                 targetWeight: Number(formData.targetWeight),
+                avatarUrl: formData.avatarUrl || undefined,
             });
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (error) {
             console.error(error);
+            addToast('error', 'Erro ao salvar perfil. Tente novamente.');
         } finally {
             setIsSaving(false);
         }
@@ -93,14 +127,39 @@ export function ProfileEditor({ onBack }: ProfileEditorProps) {
                 {/* Photo Section */}
                 <div className="flex flex-col items-center gap-4 py-4">
                     <div className="relative group">
-                        <div className="w-24 h-24 rounded-3xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border-2 border-dashed border-emerald-300 dark:border-emerald-500/30 overflow-hidden group-hover:border-emerald-500 transition-colors">
-                            <UserCircle2 size={48} className="opacity-50" />
+                        <div
+                            onClick={() => !isUploadingAvatar && avatarInputRef.current?.click()}
+                            className="w-24 h-24 rounded-3xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border-2 border-dashed border-emerald-300 dark:border-emerald-500/30 overflow-hidden group-hover:border-emerald-500 transition-colors cursor-pointer"
+                        >
+                            {isUploadingAvatar ? (
+                                <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                            ) : formData.avatarUrl ? (
+                                <img
+                                    src={formData.avatarUrl}
+                                    alt="Avatar"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <User size={48} className="opacity-50" />
+                            )}
                         </div>
-                        <button type="button" className="absolute -bottom-2 -right-2 p-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg text-emerald-500 hover:scale-110 transition-transform">
-                            <Save size={16} />
+                        <button
+                            type="button"
+                            onClick={() => !isUploadingAvatar && avatarInputRef.current?.click()}
+                            disabled={isUploadingAvatar}
+                            className="absolute -bottom-2 -right-2 p-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg text-emerald-500 hover:scale-110 transition-transform disabled:opacity-50"
+                        >
+                            <Camera size={16} />
                         </button>
                     </div>
-                    <p className="text-xs text-zinc-400 italic">Avatar em breve...</p>
+                    <p className="text-xs text-zinc-400">Toque para alterar foto</p>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={avatarInputRef}
+                        onChange={handleAvatarChange}
+                        className="hidden"
+                    />
                 </div>
 
                 {/* Info Cards */}

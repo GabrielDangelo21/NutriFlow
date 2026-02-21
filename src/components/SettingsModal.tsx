@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, User } from 'lucide-react';
 import { useMealStore } from '../store/useMealStore';
 import { useAuth } from '../contexts/AuthContext';
+import { useToastStore } from '../store/useToastStore';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -12,6 +13,7 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const { goals, updateGoals } = useMealStore();
     const { profile, updateProfile } = useAuth();
+    const { addToast } = useToastStore();
 
     const [name, setName] = useState(profile?.name || '');
     const [calories, setCalories] = useState(goals.calories.toString());
@@ -42,11 +44,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             fat: Number(fat) || 0,
         };
 
-        await updateGoals(newGoals);
-        await updateProfile({ name, goals: newGoals });
-
-        setIsSaving(false);
-        onClose();
+        try {
+            await updateGoals(newGoals);
+            await updateProfile({ name, goals: newGoals });
+            addToast('success', 'Metas salvas com sucesso!');
+            onClose();
+        } catch {
+            addToast('error', 'Erro ao salvar metas. Tente novamente.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -105,6 +112,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 <input
                                     type="number"
                                     min="0"
+                                    max="9999"
                                     required
                                     value={calories}
                                     onChange={(e) => setCalories(e.target.value)}

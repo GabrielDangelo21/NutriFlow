@@ -1,0 +1,23 @@
+# Calorie Tracker App - Implementation Plan
+
+## V1: UI Base e Mock (Concluído)
+- [x] Passo 1: Setup, Layout Base e Dark Mode
+- [x] Passo 2: Estado Global e Mock Data (Zustand)
+- [x] Passo 3: O Componente "Resumo de Calorias" (Dashboard Superior)
+- [x] Passo 4: Barras de Progresso de Macros (Visual)
+- [x] Passo 5: Estrutura da Lista de Refeições
+- [x] Passo 6: O "Card" de Refeição (Detalhes Visuais)
+- [x] Passo 7: Modal de "Adicionar Refeição" (Formulário)
+- [x] Passo 8: Botão Flutuante (FAB) e Integração do Modal
+- [x] Passo 9: Histórico de 7 Dias (Recharts)
+- [x] Passo 10: Tela/Modal de Configurações (Metas Editáveis)
+
+## V2: Inteligência Artificial (Gemini Vision)
+- [x] Passo 11: Setup Gemini SDK e Otimização de Imagem (`@google/generative-ai` e `browser-image-compression`)
+- [x] Passo 12: Atualizar Modelos ([types.ts](file:///g:/Programacao/cont_cal/src/types.ts) com `imageUrl`) e [MealCard](file:///g:/Programacao/cont_cal/src/components/meals/MealCard.tsx#9-63) para exibir o Thumbnail
+- [x] Passo 13: Criar o Serviço [geminiService.ts](file:///g:/Programacao/cont_cal/src/services/geminiService.ts) (Prompt do Sistema + Extract JSON + Error Handling)
+- [/] Passo 14: Criar o UI da IA (`AiModal.tsx` - Layout base, botões de Foto/Galeria, Input de Texto e Quick Suggestions)
+- [ ] Passo 15: Implementar a Lógica de Visão (Tirar foto/Galeria, preview em base64 e compressão)
+- [ ] Passo 16: Lógica de Chamada à API e Loading State animado com Framer Motion
+- [ ] Passo 17: Criar a Tela de Review (Mostrar o JSON parseado ao lado da foto e permitir ajuste de macros antes de salvar)
+- [ ] Passo 18: Integrar com o FAB/Menu Principal para abrir a modal de IA

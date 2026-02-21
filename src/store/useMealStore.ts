@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Meal, DailyGoals, MealCategory } from '../types';
+import { useToastStore } from './useToastStore';
 
 interface MealState {
     selectedDateStr: string;
@@ -52,6 +53,7 @@ export const useMealStore = create<MealState>()((set) => ({
 
         if (error) {
             console.error('Error fetching meals:', error);
+            useToastStore.getState().addToast('error', 'Erro ao carregar refeições.');
             set({ loading: false });
             return;
         }
@@ -116,6 +118,7 @@ export const useMealStore = create<MealState>()((set) => ({
 
         if (error) {
             console.error('Error adding meal:', error);
+            useToastStore.getState().addToast('error', 'Erro ao salvar refeição.');
             return;
         }
 
@@ -133,21 +136,25 @@ export const useMealStore = create<MealState>()((set) => ({
         };
 
         set((state) => ({ meals: [...state.meals, newMeal] }));
+        useToastStore.getState().addToast('success', `"${newMeal.name}" adicionado!`);
     },
 
     removeMeal: async (id) => {
         const { error } = await supabase.from('meals').delete().eq('id', id);
         if (error) {
             console.error('Error removing meal:', error);
+            useToastStore.getState().addToast('error', 'Erro ao remover refeição.');
             return;
         }
         set((state) => ({ meals: state.meals.filter((m) => m.id !== id) }));
+        useToastStore.getState().addToast('info', 'Refeição removida.');
     },
 
     updateMealCategory: async (id, category) => {
         const { error } = await supabase.from('meals').update({ category }).eq('id', id);
         if (error) {
             console.error('Error updating meal category:', error);
+            useToastStore.getState().addToast('error', 'Erro ao mover refeição.');
             return;
         }
         set((state) => ({
@@ -156,7 +163,7 @@ export const useMealStore = create<MealState>()((set) => ({
     },
 
     updateMeal: async (id, meal) => {
-        const updates: any = {};
+        const updates: Record<string, unknown> = {};
         if (meal.name !== undefined) updates.name = meal.name;
         if (meal.calories !== undefined) updates.calories = meal.calories;
         if (meal.protein !== undefined) updates.protein = meal.protein;
@@ -170,12 +177,14 @@ export const useMealStore = create<MealState>()((set) => ({
         const { error } = await supabase.from('meals').update(updates).eq('id', id);
         if (error) {
             console.error('Error updating meal:', error);
+            useToastStore.getState().addToast('error', 'Erro ao atualizar refeição.');
             return;
         }
 
         set((state) => ({
             meals: state.meals.map((m) => m.id === id ? { ...m, ...meal } : m),
         }));
+        useToastStore.getState().addToast('success', 'Refeição atualizada!');
     },
 
     updateGoals: async (goals) => {
@@ -192,6 +201,7 @@ export const useMealStore = create<MealState>()((set) => ({
 
         if (error) {
             console.error('Error updating goals:', error);
+            useToastStore.getState().addToast('error', 'Erro ao salvar metas.');
             return;
         }
 

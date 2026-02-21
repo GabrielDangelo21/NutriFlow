@@ -19,3 +19,20 @@ export interface DailyGoals {
     carbs: number;
     fat: number;
 }
+
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'athlete';
+export type GoalType = 'lose' | 'maintain' | 'gain';
+export type Gender = 'male' | 'female' | 'other';
+
+export interface Profile {
+    name: string;
+    goals: DailyGoals;
+    weight?: number;
+    height?: number;
+    birthDate?: string;
+    gender?: Gender;
+    activityLevel?: ActivityLevel;
+    goalType?: GoalType;
+    targetWeight?: number;
+    avatarUrl?: string;
+}

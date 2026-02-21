@@ -2,12 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import type { ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import type { DailyGoals } from '../types';
-
-interface Profile {
-    name: string;
-    goals: DailyGoals;
-}
+import type { DailyGoals, Profile } from '../types';
 
 interface AuthContextValue {
     user: User | null;
@@ -32,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchProfile = useCallback(async (userId: string) => {
         const { data, error } = await supabase
             .from('profiles')
-            .select('name, calories_goal, protein_goal, carbs_goal, fat_goal')
+            .select('*')
             .eq('id', userId)
             .single();
 
@@ -43,6 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setProfile({
             name: data.name,
+            weight: data.weight,
+            height: data.height,
+            birthDate: data.birth_date,
+            gender: data.gender,
+            activityLevel: data.activity_level,
+            goalType: data.goal_type,
+            targetWeight: data.target_weight,
+            avatarUrl: data.avatar_url,
             goals: {
                 calories: data.calories_goal,
                 protein: data.protein_goal,
@@ -114,6 +117,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
         if (data.name !== undefined) updates.name = data.name;
+        if (data.weight !== undefined) updates.weight = data.weight;
+        if (data.height !== undefined) updates.height = data.height;
+        if (data.birthDate !== undefined) updates.birth_date = data.birthDate;
+        if (data.gender !== undefined) updates.gender = data.gender;
+        if (data.activityLevel !== undefined) updates.activity_level = data.activityLevel;
+        if (data.goalType !== undefined) updates.goal_type = data.goalType;
+        if (data.targetWeight !== undefined) updates.target_weight = data.targetWeight;
+        if (data.avatarUrl !== undefined) updates.avatar_url = data.avatarUrl;
+
         if (data.goals) {
             if (data.goals.calories !== undefined) updates.calories_goal = data.goals.calories;
             if (data.goals.protein !== undefined) updates.protein_goal = data.goals.protein;
@@ -121,7 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (data.goals.fat !== undefined) updates.fat_goal = data.goals.fat;
         }
 
-        await supabase.from('profiles').update(updates).eq('id', user.id);
+        const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+        if (error) {
+            console.error('Error updating profile:', error);
+            throw error;
+        }
         await fetchProfile(user.id);
     };
 

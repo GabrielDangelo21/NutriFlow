@@ -11,7 +11,10 @@ import { AiAnalyzerModal } from './components/ai/AiAnalyzerModal';
 import { AuthPage } from './components/auth/AuthPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useMealStore } from './store/useMealStore';
+import { ProfileEditor } from './components/profile/ProfileEditor';
 import type { MealCategory } from './types';
+
+export type AppView = 'dashboard' | 'profile';
 
 function Dashboard() {
   const { fetchMeals, fetchGoals } = useMealStore();
@@ -47,7 +50,7 @@ function Dashboard() {
   };
 
   return (
-    <AppLayout>
+    <>
       <div className="flex flex-col gap-6 pb-24 relative">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-zinc-800 to-zinc-500 dark:from-zinc-100 dark:to-zinc-400 bg-clip-text text-transparent">Hoje</h2>
@@ -131,12 +134,13 @@ function Dashboard() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
-    </AppLayout>
+    </>
   );
 }
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const [view, setView] = useState<AppView>('dashboard');
 
   if (loading) {
     return (
@@ -153,7 +157,15 @@ function AppContent() {
     return <AuthPage />;
   }
 
-  return <Dashboard />;
+  return (
+    <AppLayout onProfileClick={() => setView('profile')}>
+      {view === 'dashboard' ? (
+        <Dashboard />
+      ) : (
+        <ProfileEditor onBack={() => setView('dashboard')} />
+      )}
+    </AppLayout>
+  );
 }
 
 function App() {

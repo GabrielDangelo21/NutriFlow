@@ -35,32 +35,31 @@ const CustomTooltip = ({ active, payload, goals }: CustomTooltipProps) => {
 
 export function HistoryChart() {
     const { theme } = useTheme();
-    const { goals } = useMealStore();
+    const { meals, goals } = useMealStore();
 
-    // Real implementation would read 7 days from the store.
-    // For the V1 mock, we generate 7 days based on the current date,
-    // heavily simplifying just to show the Recharts integration.
-    const today = new Date();
     const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
     const data = Array.from({ length: 7 }).map((_, i) => {
-        const d = new Date(today);
-        d.setDate(today.getDate() - (6 - i));
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+
+        // Format date string to match store format (YYYY-MM-DD)
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
+        // Aggregate calories for this specific date
+        const dailyCalories = meals
+            .filter(meal => meal.dateStr === dateStr)
+            .reduce((sum, meal) => sum + meal.calories, 0);
 
         const isToday = i === 6;
-        let calories = 0;
-
-        if (isToday) {
-            calories = 1730; // Hardcoded mock
-        } else {
-            // Pseudo-random but deterministic for the render
-            calories = goals.calories - 400 + (Math.sin(i) * 0.5 + 0.5) * 800;
-        }
 
         return {
             name: days[d.getDay()],
-            calories: Math.round(calories),
-            isOver: calories > goals.calories,
+            calories: dailyCalories,
+            isOver: dailyCalories > goals.calories,
             isToday
         };
     });

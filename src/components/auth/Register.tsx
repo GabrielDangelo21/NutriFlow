@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Flame, Loader2, Eye, EyeOff, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import logo from '../../assets/logo.png';
 
 interface RegisterProps {
     onSwitchToLogin: () => void;
@@ -80,6 +81,7 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
             className="w-full max-w-sm mx-auto"
         >
             <div className="text-center mb-8">
+                <img src={logo} alt="NutriFlow Logo" className="w-16 h-16 mx-auto mb-4 rounded-2xl shadow-lg ring-1 ring-zinc-100 dark:ring-zinc-800" />
                 <h1 className="text-3xl font-extrabold bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
                     NutriFlow
                 </h1>
